@@ -1,17 +1,21 @@
 package user
 
-type Repository interface {
-	Register(u *User) string
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
-	Find(id string) *User
+type Repository interface {
+	Register(u *User) (string, error)
+
+	Find(id string) (*User, error)
 }
 
 type User struct {
-	ID        string `json:"id"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	NickName  string `json:"nickName"`
-	Password  string `json:"password"`
-	Email     string `json:"email"`
-	Country   string `json:"country"`
+	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	FirstName string             `json:"firstName" bson:"firstName" validate:"required"`
+	LastName  string             `json:"lastName" bson:"lastName" validate:"required"`
+	NickName  string             `json:"nickName" bson:"nickName" validate:"required"`
+	Password  string             `json:"password" bson:"password" validate:"required"`
+	Email     string             `json:"email" bson:"email" validate:"required,email"`
+	Country   string             `json:"country" bson:"country" validate:"required"`
 }

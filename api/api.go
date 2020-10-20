@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 
@@ -16,9 +17,12 @@ func UserRegHandler(validate *validator.Validate, repo user.Repository) ReqHandl
 			return err
 		}
 
-		id := repo.Register(userReq)
-		w.WriteHeader(http.StatusCreated)
+		id, err := repo.Register(userReq)
+		if err != nil {
+			return &StatusError{Code: http.StatusInternalServerError, Err: err}
+		}
 
+		w.WriteHeader(http.StatusCreated)
 		if _, err := w.Write([]byte(id)); err != nil {
 			return &StatusError{Code: http.StatusInternalServerError, Err: err}
 		}
@@ -27,8 +31,17 @@ func UserRegHandler(validate *validator.Validate, repo user.Repository) ReqHandl
 }
 
 func UserGetHandler(repo user.Repository) ReqHandler {
-	return func(writer http.ResponseWriter, request *http.Request) *StatusError {
+	return func(w http.ResponseWriter, r *http.Request) *StatusError {
+		userId := mux.Vars(r)["id"]
+		foundUser, err := repo.Find(userId)
+		if err != nil {
+			return &StatusError{Code: http.StatusInternalServerError, Err: err}
+		}
 
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(foundUser); err != nil {
+			return &StatusError{Code: http.StatusInternalServerError, Err: err}
+		}
 		return nil
 	}
 }
