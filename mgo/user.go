@@ -2,6 +2,7 @@ package mgo
 
 import (
 	"context"
+	"errors"
 	"github.com/newestuser/faceit/user"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -40,8 +41,10 @@ func (s *mgoUserRepository) Find(id string) (*user.User, error) {
 
 	result := s.users().FindOne(context.TODO(), bson.M{"_id": oid})
 
-	if result.Err() != nil {
-		return nil, result.Err()
+	if errors.Is(result.Err(), mongo.ErrNoDocuments) {
+		return nil, &user.NotFoundError{UID: id}
+	} else if result.Err() != nil {
+		return nil, err
 	}
 
 	u := &user.User{}

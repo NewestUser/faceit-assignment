@@ -64,7 +64,7 @@ func TestReturn400WhenUserInvalid(t *testing.T) {
 }
 
 func TestReturn404WhenUserNotFound(t *testing.T) {
-	uid := "non-existing-user"
+	uid := "5f8f5531bedb14dabc452d71" // arbitrarily chosen
 
 	req := newRequest("GET", fmt.Sprintf("/users/%s", uid), nil)
 	resp := doRequest(req)
