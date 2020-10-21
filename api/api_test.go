@@ -16,6 +16,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Running integration tests with httptest.Server -> http://developers--production.almamedia.fi.s3-website-eu-west-1.amazonaws.com/2014/painless-mongodb-testing-with-docker-and-golang/
+// 1. Integration testing with make and docker -> https://blog.gojekengineering.com/golang-integration-testing-made-easy-a834e754fa4c
+// 2. Integration testing with make and docker -> https://medium.com/@rabin_gaire/integration-test-on-golang-using-docker-852f4c933cbe
+
 func TestFindCreatedUser(t *testing.T) {
 	u := &user.User{
 		FirstName: "John",
@@ -40,18 +44,43 @@ func TestFindCreatedUser(t *testing.T) {
 
 	assert.Equal(t, u, actual)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
 
+func TestReturn400WhenUserInvalid(t *testing.T) {
+	emptyName := ""
+	u := &user.User{
+		FirstName: emptyName,
+		LastName:  "Doe",
+		NickName:  "johny",
+		Password:  "qwerty",
+		Email:     "john.doe@mail.com",
+		Country:   "DE",
+	}
+
+	req := newRequest("POST", "/users", u)
+	resp := doRequest(req)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestReturn404WhenUserNotFound(t *testing.T) {
+	uid := "non-existing-user"
+
+	req := newRequest("GET", fmt.Sprintf("/users/%s", uid), nil)
+	resp := doRequest(req)
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
 
 func readRespBytes(resp *http.Response) []byte {
-	bytes, err := ioutil.ReadAll(resp.Body)
+	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		panic(err)
 	}
 	if err = resp.Body.Close(); err != nil {
 		panic(err)
 	}
-	return bytes
+	return b
 }
 
 type inMemoryRepo struct {

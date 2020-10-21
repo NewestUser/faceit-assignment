@@ -35,6 +35,10 @@ func UserGetHandler(repo user.Repository) ReqHandler {
 		userId := mux.Vars(r)["id"]
 		foundUser, err := repo.Find(userId)
 		if err != nil {
+			if _, ok := err.(*user.NotFoundError); ok {
+				return &StatusError{Code: http.StatusNotFound, Err: err}
+			}
+
 			return &StatusError{Code: http.StatusInternalServerError, Err: err}
 		}
 
@@ -51,7 +55,7 @@ func validUnmarshal(val interface{}, req *http.Request, validate *validator.Vali
 		return &StatusError{Code: http.StatusBadRequest, Err: err}
 	}
 
-	if err := validate.Struct(validate); err != nil {
+	if err := validate.Struct(val); err != nil {
 		return &StatusError{Code: http.StatusBadRequest, Err: err}
 	}
 
@@ -60,12 +64,11 @@ func validUnmarshal(val interface{}, req *http.Request, validate *validator.Vali
 
 type ReqHandler func(http.ResponseWriter, *http.Request) *StatusError
 
+// https://blog.questionable.services/article/http-handler-error-handling-revisited/
 func (fn ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if err := fn(w, r); err != nil { // e is *appError, not os.Error.
+	if err := fn(w, r); err != nil {
 		log.Printf("HTTP %d - %s", err.Status(), err)
 		http.Error(w, err.Error(), err.Status())
-		//http.Error(w, http.StatusText(http.StatusInternalServerError),
-		//	http.StatusInternalServerError)
 	}
 }
 

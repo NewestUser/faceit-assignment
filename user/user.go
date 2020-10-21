@@ -1,8 +1,17 @@
 package user
 
 import (
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+type NotFoundError struct {
+	UID string
+}
+
+func (e *NotFoundError) Error() string {
+	return fmt.Sprintf("user with id: %s not found", e.UID)
+}
 
 type Repository interface {
 	Register(u *User) (string, error)

@@ -32,7 +32,7 @@ func (s *mgoUserRepository) Register(u *user.User) (string, error) {
 func (s *mgoUserRepository) Find(id string) (*user.User, error) {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, err
+		return nil, &user.NotFoundError{UID: id}
 	}
 
 	result := s.users().FindOne(context.TODO(), bson.M{"_id": oid})
