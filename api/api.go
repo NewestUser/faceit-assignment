@@ -26,13 +26,33 @@ func UserRegHandler(validate *validator.Validate, repo user.Repository) ReqHandl
 	}
 }
 
+func UserUpdateHandler(validate *validator.Validate, repo user.Repository) ReqHandler {
+	return func(w http.ResponseWriter, r *http.Request) *StatusError {
+		userReq := &user.User{}
+		if err := validUnmarshal(userReq, r, validate); err != nil {
+			return err
+		}
+
+		regUser, err := repo.Update(userReq)
+		if err != nil {
+			if _, ok := err.(*user.ErrNotFound); ok {
+				return &StatusError{Code: http.StatusNotFound, Err: err}
+			}
+
+			return &StatusError{Code: http.StatusInternalServerError, Err: err}
+		}
+
+		return respond(w, regUser, http.StatusOK)
+	}
+}
+
 func UserGetHandler(repo user.Repository) ReqHandler {
 	return func(w http.ResponseWriter, r *http.Request) *StatusError {
 		userId := mux.Vars(r)["id"]
 		foundUser, err := repo.Find(userId)
 
 		if err != nil {
-			if _, ok := err.(*user.NotFoundError); ok {
+			if _, ok := err.(*user.ErrNotFound); ok {
 				return &StatusError{Code: http.StatusNotFound, Err: err}
 			}
 

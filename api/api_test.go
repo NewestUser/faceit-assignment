@@ -5,14 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
 
 	"github.com/newestuser/faceit/user"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Running integration tests with httptest.Server -> http://developers--production.almamedia.fi.s3-website-eu-west-1.amazonaws.com/2014/painless-mongodb-testing-with-docker-and-golang/
@@ -72,39 +70,69 @@ func TestReturn404WhenUserNotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
 
-func readRespBytes(resp *http.Response) []byte {
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
+func TestUpdateExistingUser(t *testing.T) {
+	u := &user.User{
+		FirstName: "Vincent",
+		LastName:  "Furnier",
+		NickName:  "Vincent",
+		Password:  "qwerty",
+		Email:     "alice.cooper@mail.com",
+		Country:   "US",
 	}
-	if err = resp.Body.Close(); err != nil {
-		panic(err)
-	}
-	return b
+
+	regReq := newRequest("POST", "/users", u)
+	regResp := doRequest(regReq)
+
+	assert.Equal(t, http.StatusCreated, regResp.StatusCode)
+	regUser := &user.User{}
+	_ = json.NewDecoder(regResp.Body).Decode(regUser)
+
+	regUser.FirstName = "Alice"
+	regUser.LastName = "Cooper"
+
+	updReq := newRequest("PUT", fmt.Sprintf("/users/%s", regUser.ID.Hex()), regUser)
+	updResp := doRequest(updReq)
+
+	updUser := &user.User{}
+	_ = json.NewDecoder(updResp.Body).Decode(updUser)
+	assert.Equal(t, regUser, updUser)
+	assert.Equal(t, http.StatusOK, updResp.StatusCode)
 }
 
-type inMemoryRepo struct {
-	data map[primitive.ObjectID]*user.User
-}
-
-func newRepo() user.Repository {
-	return &inMemoryRepo{
-		data: make(map[primitive.ObjectID]*user.User),
-	}
-}
-
-func (r *inMemoryRepo) Find(id string) (*user.User, error) {
-	oid, _ := primitive.ObjectIDFromHex(id)
-	return r.data[oid], nil
-}
-
-func (r *inMemoryRepo) Register(u *user.User) (*user.User, error) {
-	id := primitive.NewObjectID()
-	r.data[id] = u
-	uCopy := *u
-	uCopy.ID = id
-	return &uCopy, nil
-}
+//
+//func readRespBytes(resp *http.Response) []byte {
+//	b, err := ioutil.ReadAll(resp.Body)
+//	if err != nil {
+//		panic(err)
+//	}
+//	if err = resp.Body.Close(); err != nil {
+//		panic(err)
+//	}
+//	return b
+//}
+//
+//type inMemoryRepo struct {
+//	data map[primitive.ObjectID]*user.User
+//}
+//
+//func newRepo() user.Repository {
+//	return &inMemoryRepo{
+//		data: make(map[primitive.ObjectID]*user.User),
+//	}
+//}
+//
+//func (r *inMemoryRepo) Find(id string) (*user.User, error) {
+//	oid, _ := primitive.ObjectIDFromHex(id)
+//	return r.data[oid], nil
+//}
+//
+//func (r *inMemoryRepo) Register(u *user.User) (*user.User, error) {
+//	id := primitive.NewObjectID()
+//	r.data[id] = u
+//	uCopy := *u
+//	uCopy.ID = id
+//	return &uCopy, nil
+//}
 
 func doRequest(req *http.Request) *http.Response {
 	resp, err := http.DefaultClient.Do(req)

@@ -21,6 +21,7 @@ func main() {
 	router := mux.NewRouter()
 	router.Handle("/users", api.UserRegHandler(validate, repo)).Methods("POST")
 	router.Handle("/users/{id}", api.UserGetHandler(repo)).Methods("GET")
+	router.Handle("/users/{id}", api.UserUpdateHandler(validate, repo)).Methods("PUT")
 
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
