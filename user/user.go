@@ -26,11 +26,11 @@ type Repository interface {
 }
 
 type User struct {
-	ID        *primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	FirstName string             `json:"firstName" bson:"firstName" validate:"required"`
-	LastName  string             `json:"lastName" bson:"lastName" validate:"required"`
-	NickName  string             `json:"nickName" bson:"nickName" validate:"required"`
-	Password  string             `json:"password" bson:"password" validate:"required"`
-	Email     string             `json:"email" bson:"email" validate:"required,email"`
-	Country   string             `json:"country" bson:"country" validate:"required"`
+	ID        *primitive.ObjectID `json:"id" bson:"_id"`
+	FirstName string              `json:"firstName" validate:"required"`
+	LastName  string              `json:"lastName" validate:"required"`
+	NickName  string              `json:"nickName" validate:"required"`
+	Password  string              `json:"password" validate:"required"`
+	Email     string              `json:"email" validate:"required,email"`
+	Country   string              `json:"country" validate:"required"`
 }

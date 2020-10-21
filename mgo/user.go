@@ -11,6 +11,10 @@ import (
 
 const users = "users"
 
+func NewUserRepository(db *MongoDB) user.Repository {
+	return &mgoUserRepository{db}
+}
+
 type mgoUserRepository struct {
 	*MongoDB
 }
@@ -38,7 +42,7 @@ func (s *mgoUserRepository) Register(u *user.User) (*user.User, error) {
 	uCopy := *u
 	uCopy.ID = nil
 
-	result, err := s.users().InsertOne(context.TODO(), u)
+	result, err := s.users().InsertOne(context.TODO(), adaptToBson(u))
 	if err != nil {
 		return nil, err
 	}
@@ -51,20 +55,10 @@ func (s *mgoUserRepository) Register(u *user.User) (*user.User, error) {
 
 func (s *mgoUserRepository) Update(u *user.User) (*user.User, error) {
 	if u.ID == nil {
-		return nil, &user.ErrNotFound{UID: "'nill'"}
+		return nil, &user.ErrNotFound{UID: "'nil'"}
 	}
 
-	result, err := s.users().UpdateOne(context.TODO(), bson.M{"_id": u.ID},
-		bson.M{
-			"$set": bson.M{
-				"firstName": u.FirstName,
-				"lastName":  u.LastName,
-				"nickName":  u.NickName,
-				"password":  u.Password,
-				"email":     u.Email,
-				"country":   u.Country,
-			},
-		})
+	result, err := s.users().UpdateOne(context.TODO(), bson.M{"_id": u.ID}, bson.M{"$set": adaptToBson(u)})
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +74,13 @@ func (s *mgoUserRepository) users() *mongo.Collection {
 	return s.Collection(users)
 }
 
-func NewUserRepository(db *MongoDB) user.Repository {
-	return &mgoUserRepository{db}
+func adaptToBson(u *user.User) bson.M {
+	return bson.M{
+		"firstName": u.FirstName,
+		"lastName":  u.LastName,
+		"nickName":  u.NickName,
+		"password":  u.Password,
+		"email":     u.Email,
+		"country":   u.Country,
+	}
 }
