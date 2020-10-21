@@ -18,15 +18,18 @@ func (s *mgoUserRepository) users() *mongo.Collection {
 	return s.Collection(users)
 }
 
-func (s *mgoUserRepository) Register(u *user.User) (string, error) {
+func (s *mgoUserRepository) Register(u *user.User) (*user.User, error) {
 	result, err := s.users().InsertOne(context.TODO(), u)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	id := result.InsertedID.(primitive.ObjectID)
 
-	return id.Hex(), nil
+	uCopy := *u
+	uCopy.ID = id
+
+	return &uCopy, nil
 }
 
 func (s *mgoUserRepository) Find(id string) (*user.User, error) {

@@ -14,7 +14,7 @@ func (e *NotFoundError) Error() string {
 }
 
 type Repository interface {
-	Register(u *User) (string, error)
+	Register(u *User) (*User, error)
 
 	Find(id string) (*User, error)
 }

@@ -4,16 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/newestuser/faceit/user"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Running integration tests with httptest.Server -> http://developers--production.almamedia.fi.s3-website-eu-west-1.amazonaws.com/2014/painless-mongodb-testing-with-docker-and-golang/
@@ -34,15 +33,16 @@ func TestFindCreatedUser(t *testing.T) {
 	resp := doRequest(req)
 
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
-	u.ID, _ = primitive.ObjectIDFromHex(string(readRespBytes(resp)))
+	regUser := &user.User{}
+	_ = json.NewDecoder(resp.Body).Decode(regUser)
 
-	req = newRequest("GET", fmt.Sprintf("/users/%s", u.ID.Hex()), nil)
+	req = newRequest("GET", fmt.Sprintf("/users/%s", regUser.ID.Hex()), nil)
 	resp = doRequest(req)
 
 	actual := &user.User{}
 	_ = json.NewDecoder(resp.Body).Decode(actual)
 
-	assert.Equal(t, u, actual)
+	assert.Equal(t, regUser, actual)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -84,24 +84,26 @@ func readRespBytes(resp *http.Response) []byte {
 }
 
 type inMemoryRepo struct {
-	data map[string]*user.User
+	data map[primitive.ObjectID]*user.User
 }
 
 func newRepo() user.Repository {
 	return &inMemoryRepo{
-		data: make(map[string]*user.User),
+		data: make(map[primitive.ObjectID]*user.User),
 	}
 }
 
 func (r *inMemoryRepo) Find(id string) (*user.User, error) {
-
-	return r.data[id], nil
+	oid, _ := primitive.ObjectIDFromHex(id)
+	return r.data[oid], nil
 }
 
-func (r *inMemoryRepo) Register(u *user.User) (string, error) {
-	id, _ := uuid.NewRandom()
-	r.data[id.String()] = u
-	return id.String(), nil
+func (r *inMemoryRepo) Register(u *user.User) (*user.User, error) {
+	id := primitive.NewObjectID()
+	r.data[id] = u
+	uCopy := *u
+	uCopy.ID = id
+	return &uCopy, nil
 }
 
 func doRequest(req *http.Request) *http.Response {
