@@ -99,41 +99,6 @@ func TestUpdateExistingUser(t *testing.T) {
 	assert.Equal(t, http.StatusOK, updResp.StatusCode)
 }
 
-//
-//func readRespBytes(resp *http.Response) []byte {
-//	b, err := ioutil.ReadAll(resp.Body)
-//	if err != nil {
-//		panic(err)
-//	}
-//	if err = resp.Body.Close(); err != nil {
-//		panic(err)
-//	}
-//	return b
-//}
-//
-//type inMemoryRepo struct {
-//	data map[primitive.ObjectID]*user.User
-//}
-//
-//func newRepo() user.Repository {
-//	return &inMemoryRepo{
-//		data: make(map[primitive.ObjectID]*user.User),
-//	}
-//}
-//
-//func (r *inMemoryRepo) Find(id string) (*user.User, error) {
-//	oid, _ := primitive.ObjectIDFromHex(id)
-//	return r.data[oid], nil
-//}
-//
-//func (r *inMemoryRepo) Register(u *user.User) (*user.User, error) {
-//	id := primitive.NewObjectID()
-//	r.data[id] = u
-//	uCopy := *u
-//	uCopy.ID = id
-//	return &uCopy, nil
-//}
-
 func doRequest(req *http.Request) *http.Response {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -88,10 +89,27 @@ type ReqHandler func(http.ResponseWriter, *http.Request) *StatusError
 
 // https://blog.questionable.services/article/http-handler-error-handling-revisited/
 func (fn ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	defer fn.recoverFromPanic(w, r)
+
 	if err := fn(w, r); err != nil {
 		log.Printf("HTTP %d - %s", err.Status(), err)
-		http.Error(w, err.Error(), err.Status())
+		fn.respondWithJson(w, newErrorResp(err),err.Status())
 	}
+}
+
+func (fn ReqHandler) recoverFromPanic(w http.ResponseWriter, r *http.Request) {
+	err := recover()
+	if err != nil {
+		errResp := newErrorResp(err)
+		log.Printf("HTTP %d - %s", http.StatusInternalServerError, errResp.Error)
+		fn.respondWithJson(w, errResp, http.StatusInternalServerError)
+	}
+}
+
+func (fn ReqHandler) respondWithJson(w http.ResponseWriter, errResp *errorResp, statusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	_ = json.NewEncoder(w).Encode(errResp)
 }
 
 type StatusError struct {
@@ -105,4 +123,23 @@ func (se StatusError) Error() string {
 
 func (se StatusError) Status() int {
 	return se.Code
+}
+
+func newErrorResp(val interface{}) *errorResp {
+	var message string
+
+	switch v := val.(type) {
+	case string:
+		message = v
+	case error:
+		message = v.Error()
+	default:
+		message = fmt.Sprintf("unknown error occured: %s", val)
+	}
+
+	return &errorResp{Error: message}
+}
+
+type errorResp struct {
+	Error string `json:"error"`
 }
