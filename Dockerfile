@@ -1,4 +1,4 @@
-FROM golang:1.14.6-alpine3.12
+FROM golang:1.14
 
 MAINTAINER Marian Zlatev
 
@@ -9,14 +9,13 @@ WORKDIR /build
 # it seems gcc is not available on plain alpine
 ENV CGO_ENABLED=0
 
-# download dependencies
+# copy module dependencies
 COPY go.mod .
 COPY go.sum .
-RUN go mod download
 
 # copy the project itself
 COPY . .
 
-RUN cd cmd && go build -o faceit-app
+RUN go mod download && cd cmd && go build -o faceit-app
 
 CMD ["./cmd/faceit-app"]

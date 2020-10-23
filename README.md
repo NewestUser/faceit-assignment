@@ -10,18 +10,22 @@
 - I have omitted stuff like connection pooling, connection timeouts etc...
 - Logging and error handling can be greatly improved.
 - I haven't introduce another layer between HTTP Handles and Database interactions.
-
-### TODO
-
-- Health Check
-- Paging API with filtering
-- Fine tuning kafka
+- Health Check.
+- Paging API with filtering.
+- Fine tuning kafka.
+- Connection pooling and properly closing db sessions.
 
 ### Getting started
 
 The application uses:
 - Mongo as a persistence layer
 - Kafka for messaging
+
+**IMPORTANT:** I have come across a cross compilation issue with the package `github.com/confluentinc/confluent-kafka-go/kafka`
+This issue manifest particularly when building the project inside a Docker container.
+I haven't had time to fix it but you can see here [issues 119](https://github.com/confluentinc/confluent-kafka-go/issues/119)
+that it is still open.  
+Depending on the OS you are running you might experience docker build issues.
 
 #### Build and run tests
 Note that the tests are **End 2 End**. The application will be started in order to run the test.
@@ -32,7 +36,11 @@ docker-compose up faceitapi-tets
 
 #### Run application for development
 ```shell script
-docker-compose up faceitapi
+# Start dependencies
+docker-compose up zookeeper kafka mongo
+
+# start the app from terminal (or you can run it in your IDE)
+go mod download && cd cmd && go build -o faceit-app && ./faceit-app
 ```
 
 ### API
