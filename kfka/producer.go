@@ -7,7 +7,9 @@ import (
 )
 
 func NewKafkaProducer(bootstrapServers string) (*KafkaProducer, error) {
-	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": bootstrapServers})
+	p, err := kafka.NewProducer(&kafka.ConfigMap{
+		"bootstrap.servers": bootstrapServers,
+	})
 
 	if err != nil {
 		return nil, err

@@ -14,8 +14,8 @@
 ### TODO
 
 - Health Check
-- Logging
 - Paging API with filtering
+- Fine tuning kafka
 
 ### Getting started
 

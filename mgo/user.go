@@ -3,6 +3,7 @@ package mgo
 import (
 	"context"
 	"errors"
+	"github.com/newestuser/faceit/logger"
 	"github.com/newestuser/faceit/user"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -75,8 +76,9 @@ func (s *mgoUserRepository) Update(u *user.User) (*user.User, error) {
 	}
 	// since I don't have another a service layer and I don't have a use cae for
 	// how to handle errors when emitting events I am deliberately ignoring the error
-	err = s.eventEmitter.EmitUpdate(user.UpdateEvent, u)
-	println("failed emitting User Update Event", err)
+	if err := s.eventEmitter.EmitUpdate(user.UpdateEvent, u); err != nil {
+		logger.Warning.Println("failed emitting User Update Event", err)
+	}
 
 	return u, nil
 }
