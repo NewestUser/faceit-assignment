@@ -11,12 +11,13 @@ import (
 
 const users = "users"
 
-func NewUserRepository(db *MongoDB) user.Repository {
-	return &mgoUserRepository{db}
+func NewUserRepository(db *MongoDB, em user.EventEmitter) user.Repository {
+	return &mgoUserRepository{MongoDB: db, eventEmitter: em}
 }
 
 type mgoUserRepository struct {
 	*MongoDB
+	eventEmitter user.EventEmitter
 }
 
 func (s *mgoUserRepository) Find(id string) (*user.User, error) {
@@ -40,32 +41,39 @@ func (s *mgoUserRepository) Find(id string) (*user.User, error) {
 
 func (s *mgoUserRepository) Register(u *user.User) (*user.User, error) {
 	uCopy := *u
-	uCopy.ID = nil
-
 	result, err := s.users().InsertOne(context.TODO(), adaptToBson(u))
 	if err != nil {
 		return nil, err
 	}
 
 	id := result.InsertedID.(primitive.ObjectID)
-	uCopy.ID = &id
+	uCopy.ID = id.Hex()
 
 	return &uCopy, nil
 }
 
 func (s *mgoUserRepository) Update(u *user.User) (*user.User, error) {
-	if u.ID == nil {
+	if u.ID == "" {
 		return nil, &user.ErrNotFound{UID: "'nil'"}
 	}
 
-	result, err := s.users().UpdateOne(context.TODO(), bson.M{"_id": u.ID}, bson.M{"$set": adaptToBson(u)})
+	oid, err := primitive.ObjectIDFromHex(u.ID)
+	if err != nil {
+		return nil, &user.ErrNotFound{UID: u.ID}
+	}
+
+	result, err := s.users().UpdateOne(context.TODO(), bson.M{"_id": oid}, bson.M{"$set": adaptToBson(u)})
 	if err != nil {
 		return nil, err
 	}
 
 	if result.MatchedCount == 0 {
-		return nil, &user.ErrNotFound{UID: u.ID.Hex()}
+		return nil, &user.ErrNotFound{UID: u.ID}
 	}
+	// since I don't have another a service layer and I don't have a use cae for
+	// how to handle errors when emitting events I am deliberately ignoring the error
+	err = s.eventEmitter.EmitUpdate(user.UpdateEvent, u)
+	println("failed emitting User Update Event", err)
 
 	return u, nil
 }

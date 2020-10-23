@@ -2,8 +2,12 @@ package user
 
 import (
 	"fmt"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+type Event string
+
+const CreateEvent = Event("create")
+const UpdateEvent = Event("update")
 
 type ErrNotFound struct {
 	UID string
@@ -25,8 +29,13 @@ type Repository interface {
 	Update(u *User) (*User, error)
 }
 
+type EventEmitter interface {
+	// Emit an event that a User has been updated.
+	EmitUpdate(e Event, u *User) error
+}
+
 type User struct {
-	ID        *primitive.ObjectID `json:"id" bson:"_id"`
+	ID        string `json:"id"`
 	FirstName string              `json:"firstName" validate:"required"`
 	LastName  string              `json:"lastName" validate:"required"`
 	NickName  string              `json:"nickName" validate:"required"`

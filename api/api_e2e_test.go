@@ -34,7 +34,7 @@ func TestFindCreatedUser(t *testing.T) {
 	regUser := &user.User{}
 	_ = json.NewDecoder(resp.Body).Decode(regUser)
 
-	req = newRequest("GET", fmt.Sprintf("/users/%s", regUser.ID.Hex()), nil)
+	req = newRequest("GET", fmt.Sprintf("/users/%s", regUser.ID), nil)
 	resp = doRequest(req)
 
 	actual := &user.User{}
@@ -87,10 +87,12 @@ func TestUpdateExistingUser(t *testing.T) {
 	regUser := &user.User{}
 	_ = json.NewDecoder(regResp.Body).Decode(regUser)
 
+	regUserId := regUser.ID
+	regUser.ID = "" // ID should be taken from URL
 	regUser.FirstName = "Alice"
 	regUser.LastName = "Cooper"
 
-	updReq := newRequest("PUT", fmt.Sprintf("/users/%s", regUser.ID.Hex()), regUser)
+	updReq := newRequest("PUT", fmt.Sprintf("/users/%s", regUserId), regUser)
 	updResp := doRequest(updReq)
 
 	updUser := &user.User{}
@@ -108,7 +110,7 @@ func doRequest(req *http.Request) *http.Response {
 }
 
 func newRequest(method, path string, body interface{}) *http.Request {
-	addr := os.Getenv("FORM3_ADDR")
+	addr := os.Getenv("FACEIT_ADDR")
 	if len(addr) == 0 {
 		addr = "http://localhost:8080"
 	}

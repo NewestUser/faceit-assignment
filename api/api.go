@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"github.com/newestuser/faceit/logger"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -29,7 +29,7 @@ func UserRegHandler(validate *validator.Validate, repo user.Repository) ReqHandl
 
 func UserUpdateHandler(validate *validator.Validate, repo user.Repository) ReqHandler {
 	return func(w http.ResponseWriter, r *http.Request) *StatusError {
-		userReq := &user.User{}
+		userReq := &user.User{ID: mux.Vars(r)["id"]}
 		if err := validUnmarshal(userReq, r, validate); err != nil {
 			return err
 		}
@@ -87,21 +87,21 @@ func validUnmarshal(val interface{}, req *http.Request, validate *validator.Vali
 
 type ReqHandler func(http.ResponseWriter, *http.Request) *StatusError
 
-// https://blog.questionable.services/article/http-handler-error-handling-revisited/
 func (fn ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	defer fn.recoverFromPanic(w, r)
+	logger.Info.Println(r.Method, r.URL.Path)
+	defer fn.recoverFromPanic(w)
 
 	if err := fn(w, r); err != nil {
-		log.Printf("HTTP %d - %s", err.Status(), err)
-		fn.respondWithJson(w, newErrorResp(err),err.Status())
+		logger.Error.Println(r.Method, r.URL.Path, "status:", err.Status(), "err:", err)
+		fn.respondWithJson(w, newErrorResp(err), err.Status())
 	}
 }
 
-func (fn ReqHandler) recoverFromPanic(w http.ResponseWriter, r *http.Request) {
+func (fn ReqHandler) recoverFromPanic(w http.ResponseWriter) {
 	err := recover()
 	if err != nil {
 		errResp := newErrorResp(err)
-		log.Printf("HTTP %d - %s", http.StatusInternalServerError, errResp.Error)
+		logger.Error.Println("UNHANDLED_ERROR", "status:", http.StatusInternalServerError, "err:", err)
 		fn.respondWithJson(w, errResp, http.StatusInternalServerError)
 	}
 }
@@ -109,7 +109,9 @@ func (fn ReqHandler) recoverFromPanic(w http.ResponseWriter, r *http.Request) {
 func (fn ReqHandler) respondWithJson(w http.ResponseWriter, errResp *errorResp, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
+	bts, _ := json.Marshal(errResp)
 	_ = json.NewEncoder(w).Encode(errResp)
+	logger.Error.Println("status:", statusCode, "response:", string(bts))
 }
 
 type StatusError struct {
