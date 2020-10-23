@@ -28,11 +28,14 @@ func main() {
 	if err := db.Connect(); err != nil {
 		log.Fatal(err)
 	}
+	defer db.Disconnect()
 
 	producer, err := kfka.NewKafkaProducer(kfkaHost)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer producer.Close()
+
 	userEmitter := kfka.NewKafkaUserEventEmitter(producer)
 
 	repo := mgo.NewUserRepository(db, userEmitter)

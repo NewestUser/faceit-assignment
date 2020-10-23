@@ -37,3 +37,7 @@ func (k *KafkaProducer) Produce(topic string, msgValue interface{}) error {
 
 	return nil
 }
+
+func (k *KafkaProducer) Close() {
+	k.p.Close()
+}

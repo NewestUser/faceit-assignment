@@ -29,11 +29,12 @@ func UserRegHandler(validate *validator.Validate, repo user.Repository) ReqHandl
 
 func UserUpdateHandler(validate *validator.Validate, repo user.Repository) ReqHandler {
 	return func(w http.ResponseWriter, r *http.Request) *StatusError {
-		userReq := &user.User{ID: mux.Vars(r)["id"]}
+		userReq := &user.User{}
 		if err := validUnmarshal(userReq, r, validate); err != nil {
 			return err
 		}
 
+		userReq.ID = mux.Vars(r)["id"]
 		regUser, err := repo.Update(userReq)
 		if err != nil {
 			if _, ok := err.(*user.ErrNotFound); ok {

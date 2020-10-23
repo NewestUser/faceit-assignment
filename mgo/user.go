@@ -35,8 +35,11 @@ func (s *mgoUserRepository) Find(id string) (*user.User, error) {
 	}
 
 	u := &user.User{}
-	err = result.Decode(u)
-	return u, err
+	if err = result.Decode(u); err != nil {
+		return nil, err
+	}
+	u.ID = id
+	return u, nil
 }
 
 func (s *mgoUserRepository) Register(u *user.User) (*user.User, error) {

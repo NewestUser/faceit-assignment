@@ -94,6 +94,8 @@ func TestUpdateExistingUser(t *testing.T) {
 
 	updReq := newRequest("PUT", fmt.Sprintf("/users/%s", regUserId), regUser)
 	updResp := doRequest(updReq)
+	regUser.ID = regUserId
+
 
 	updUser := &user.User{}
 	_ = json.NewDecoder(updResp.Body).Decode(updUser)

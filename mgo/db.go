@@ -3,6 +3,7 @@ package mgo
 import (
 	"context"
 	"fmt"
+	"github.com/newestuser/faceit/logger"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -16,6 +17,7 @@ type MongoDB struct {
 	port   int
 	dbname string
 
+	client *mongo.Client
 	database *mongo.Database
 }
 
@@ -41,12 +43,18 @@ func (m *MongoDB) Connect() error {
 	if err != nil {
 		return err
 	}
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	err = client.Connect(ctx)
 	if err != nil {
 		return err
 	}
 
+	m.client = client
 	m.database = client.Database(m.dbname)
 	return nil
+}
+
+func (m *MongoDB) Disconnect()  {
+	err := m.client.Disconnect(context.TODO())
+	logger.Error.Println("Failed to disconnect Mongo client err:", err)
 }
